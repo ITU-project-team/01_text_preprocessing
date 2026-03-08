@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data - 원본 데이터는 Git에 올리지 않음
+data/raw/
+data/filtered/
+data/processed/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# ElectraSpacer 모델 캐시
+models/
