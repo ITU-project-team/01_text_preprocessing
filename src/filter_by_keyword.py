@@ -24,14 +24,24 @@ def load_keywords(keywords_path: str = "config/keywords.yaml") -> dict[str, list
 
 
 def filter_deleted_posts(df: pd.DataFrame) -> pd.DataFrame:
-    """삭제되었거나 내용이 없는 게시글을 제거합니다."""
-    # status가 DELETED인 행 제거
+    """삭제, 숨김(BLOCKED), 또는 내용이 없는 게시글을 제거하고 결과를 출력합니다."""
+    initial_count = len(df)
+
+    # status가 DELETED 또는 BLOCKED인 행 제거
     if "status" in df.columns:
-        df = df[df["status"] != "DELETED"]
+        df = df[~df["status"].isin(["DELETED", "BLOCKED"])]
 
     # content가 비어있는 행 제거
     if "content" in df.columns:
         df = df[df["content"].notna() & (df["content"].str.strip() != "")]
+
+    final_count = len(df)
+    removed_count = initial_count - final_count
+    ratio = (removed_count / initial_count * 100) if initial_count > 0 else 0.0
+
+    print(f"  [데이터 정제] 전체 원본 데이터: {initial_count:,}개")
+    print(f"  [데이터 정제] 정제된 데이터: {final_count:,}개")
+    print(f"  [데이터 정제] 제외된 데이터(삭제/숨김/빈게시글): {removed_count:,}개 ({ratio:.2f}%)")
 
     return df.reset_index(drop=True)
 
@@ -115,15 +125,13 @@ def run(
 
     # 데이터 로드
     df = pd.read_csv(input_path, encoding="utf-8")
-    print(f"  전체 게시글 수: {len(df):,}")
 
     # 삭제/빈 게시글 제거
     df = filter_deleted_posts(df)
-    print(f"  유효 게시글 수: {len(df):,}")
 
     # 키워드 필터링
     result = filter_by_keywords(df, keywords)
-    print(f"  매칭된 게시글 수: {len(result):,}")
+    print(f"  키워드 매칭된 게시글 수: {len(result):,}")
 
     # 저장
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
