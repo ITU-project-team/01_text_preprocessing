@@ -19,7 +19,7 @@ import sys
 import yaml  # type: ignore
 import pandas as pd  # type: ignore
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # ── 상수 ────────────────────────────────────────────────────────────────────
 
@@ -147,12 +147,18 @@ def stratified_sample(
 # ── Step 3: Claude용 프롬프트 생성 ───────────────────────────────────────────
 
 
-def build_prompt(sample_df: pd.DataFrame, round_num: int, max_posts: int = 50) -> str:
-    """Claude에 전달할 프롬프트를 마크다운으로 생성합니다.
+def build_prompt(
+    sample_df: pd.DataFrame,
+    round_num: int,
+    existing_keywords: Optional[Dict[str, List[str]]] = None,
+    max_posts: int = 50,
+) -> str:
+    """Claude Sonnet에 전달할 프롬프트를 마크다운으로 생성합니다.
 
     Args:
         sample_df: 샘플 데이터프레임
         round_num: 라운드 번호
+        existing_keywords: 이전 라운드까지 발견된 키워드 (Sonnet에게 보여주어 중복 방지)
         max_posts: 프롬프트에 포함할 최대 게시글 수 (기본 50, 나머지는 CSV 참조)
     """
     dimensions_desc = "\n".join(
@@ -167,7 +173,6 @@ def build_prompt(sample_df: pd.DataFrame, round_num: int, max_posts: int = 50) -
         title = str(row.get("title", "")).strip() if pd.notna(row.get("title")) else ""
         content = str(row.get("content", "")).strip() if pd.notna(row.get("content")) else ""
         combined = f"{title} {content}".strip()
-        # 300자로 잘라서 표시
         truncated = combined[:300] + ("..." if len(combined) > 300 else "")
         gu = row.get("gu", "?")
         text_lines.append(f"[{i+1}] ({gu}) {truncated}")
@@ -176,50 +181,177 @@ def build_prompt(sample_df: pd.DataFrame, round_num: int, max_posts: int = 50) -
 
     extra_note = ""
     if len(sample_df) > max_posts:
-        extra_note = f"\n> **참고**: 전체 샘플은 {len(sample_df)}건이며, 위에는 {max_posts}건만 표시됩니다. 전체 샘플은 CSV 파일을 참조하세요.\n"
+        extra_note = (
+            f"\n> **참고**: 전체 샘플은 {len(sample_df)}건이며, 위에는 {max_posts}건만 표시됩니다."
+            " 전체 샘플은 CSV 파일을 참조하세요.\n"
+        )
+
+    # 기존 키워드 섹션 (발견된 키워드가 있을 때만 포함)
+    existing_kw_section = ""
+    if existing_keywords:
+        total_existing = sum(len(v) for v in existing_keywords.values())
+        if total_existing > 0:
+            lines = ["## 이미 등록된 키워드 (중복 등록 금지)\n"]
+            lines.append(
+                "아래는 이전 라운드까지 발견된 키워드입니다. "
+                "이 목록에 **없는 새로운 키워드만** 추출하세요.\n"
+            )
+            for dim, kws in existing_keywords.items():
+                if kws:
+                    kws_list = list(sorted(kws))
+                    preview = ', '.join(kws_list[:60])
+                    suffix = '...' if len(kws_list) > 60 else ''
+                    lines.append(f"**{dim}**: {preview}{suffix}")
+            existing_kw_section = "\n" + "\n".join(lines) + "\n"
 
     prompt = f"""# 키워드 발견 분석 요청 (라운드 {round_num})
 
-당신은 한국어 텍스트 분석 전문가입니다.
-아래는 당근마켓 커뮤니티 게시글에서 **씨앗 키워드로 사전 필터링된 후보군** 중 무작위 추출한 샘플입니다.
+당신은 **한국어 텍스트 분석 및 한국어 형태론 전문가**입니다.
+아래는 서울 당근마켓 커뮤니티 게시글에서 씨앗 키워드로 필터링한 후 무작위 추출한 샘플입니다.
 
-## 분석 목적
+---
 
-이 글들에서 **UMC(Universal Meaningful Connectivity) 6개 차원**과 관련된 키워드 및 표현을 발견하는 것이 목적입니다.
-당근마켓 특유의 **구어체, 은어, 축약어, 변형 표현**까지 포착해 주세요.
+## 핵심 임무
+
+이 게시글들에서 **UMC(Universal Meaningful Connectivity) 6개 차원**에 관련된 키워드를 발견하고,
+**단순 부분 문자열 매칭**(text.contains(keyword))에서 실제로 잡힐 수 있는 **표면형(surface form)** 그대로 등록합니다.
+형태소 분석기를 사용하지 않으므로, **관찰된 표현에서 어간을 추출하여 모든 활용형을 예측·나열**해야 합니다.
+
+---
 
 ## UMC 6개 차원
 
 {dimensions_desc}
 
+---
+{existing_kw_section}
+---
+
+## 규칙 1: 한국어 어미 확장 (가장 중요)
+
+샘플에서 특정 표현을 관찰하면:
+1. 어간(stem)을 추출
+2. 당근마켓 구어체에서 나올 수 있는 모든 활용형을 예측하여 키워드로 등록
+
+### 필수 확장 체크리스트
+관찰된 용언(동사·형용사)마다 최소 아래 유형을 포함하세요:
+
+| 유형 | 어미 패턴 | 예시 (어간: 느리-) |
+|------|-----------|-------------------|
+| 기본형 | -다 | 느리다 |
+| 연결 | -고, -서, -면, -는데 | 느리고, 느려서, 느리면, 느린데 |
+| 종결 | -네, -요, -ㅂ니다 | 느리네, 느려요, 느립니다 |
+| 관형 | -ㄴ/은, -ㄹ/을, -는 | 느린, 느릴 |
+| 명사화 | -ㅁ/음, -기 | 느림, 느리기 |
+| 과거 | -았/었 | 느렸 |
+| 변화 | -지다, -짐, -져 | 느려지, 느려짐, 느려져 |
+| 구어 축약 | -ㅁ, -ㄴ듯 | 느림, 느린듯 |
+
+### 예시
+
+샘플에서 `느려` 관찰 시:
+→ 등록: 느려, 느리, 느린, 느릴, 느렸, 느려서, 느려요, 느리고, 느리네, 느리다, 느림, 느려지, 느려짐, 느려졌, 느려진, 느려터
+
+샘플에서 `빠르네` 관찰 시:
+→ 등록: 빠르, 빠른, 빨라, 빨랐, 빠를, 빠르고, 빠르네, 빨라서, 빨라요, 빠르다, 빠름, 빨라지, 빨라짐, 빨라졌
+
+샘플에서 `끊겨` 관찰 시:
+→ 등록: 끊겨, 끊기, 끊긴, 끊김, 끊겼, 끊겨서, 끊기고, 끊기네, 끊기다, 끊어, 끊어지, 끊어짐, 끊어졌
+
+샘플에서 `안 터져` 관찰 시:
+→ 등록: 안터져, 안 터져, 안터짐, 안 터짐, 안터지, 안 터지, 안터진, 안 터진, 안터지네, 못터져
+
+---
+
+## 규칙 2: 당근마켓 구어체 패턴 발견
+
+당근마켓은 10~40대 사용자가 비격식 구어체로 작성합니다. 아래 패턴을 적극 포착하세요:
+
+### 2-1. 접두 강조어 + 키워드
+`개~`, `존나~`, `겁나~`, `넘~`, `졸라~`, `완전~`, `진짜~`, `레알~`, `미친~`
+
+예: `개느려`, `겁나비싸`, `넘느림`, `진짜불안정`, `미친느림`
+
+### 2-2. 의도적 오타·구어체 축약
+- `~됨` → `~됌`, `~됬` (비표준이지만 다수 사용)
+- `~해요` → `~해용`, `~해여`, `~해요ㅠ`
+- `~입니다` → `~임다`, `~임당`, `~ㅇㅁ다`
+- `~이에요` → `~이에용`, `~이여`
+
+예: `안됌`, `안됬`, `느려용`, `비쌈ㅋ`, `먹통임다`
+
+### 2-3. 부정 표현 확장
+- `안` + 동사: `안됨`, `안돼`, `안잡혀`, `안터져`, `안나와`, `안열림`, `안들어가`
+- `못` + 동사: `못씀`, `못써`, `못쓰겠`, `못잡아`
+- `~없` 패턴: `신호없`, `와이파이없`, `인터넷없`, `데이터없`
+- `안잡힘`, `안잡혀`, `안잡히`, `안잡히네`
+
+### 2-4. 줄임말·은어
+- 통신 관련: `통사`(통신사), `인넷`(인터넷), `와파`·`와이파`(와이파이), `인터`(인터넷)
+- 기기 관련: `폰`, `노탁`(노트북), `갤탭`(갤럭시탭), `아이패`(아이패드), `아패`
+- 요금 관련: `요제`(요금제), `데타`(데이터), `알폰`(알뜰폰)
+- 보안 관련: `피싱`, `스미`, `보피`(보이스피싱)
+
+### 2-5. 모음 늘임
+`느려어`, `비싸아`, `안돼에`, `느리이이` 등 — 의미 동일, 검색에 포착되어야 함
+
+---
+
 ## 게시글 샘플 ({len(display_df)}건 / 전체 {len(sample_df)}건)
 {extra_note}
 {texts_formatted}
 
-## 요청사항
-
-각 차원별로:
-1. 해당 차원과 관련된 **모든 키워드/표현/단어** 추출 (위 샘플에서 등장한 것 위주)
-2. **변형 표현 포함** (예: "좋다", "굿", "나이스", "짱" 등 같은 의미의 다양한 표현)
-3. **부정적 표현도 포함** (예: "느려", "안터져", "먹통", "쓸모없음")
-4. 각 차원과 **무관한 글의 대략적 비율**도 알려주세요
+---
 
 ## 출력 형식 (반드시 아래 JSON 형식으로)
 
+각 차원의 키워드를 3가지 유형으로 구분하세요:
+- `observed`: 샘플에서 **직접 관찰**된 표현
+- `expanded`: 관찰된 표현에서 **어미 확장**으로 추가한 키워드
+- `slang`: **은어·축약어·구어체 변형** (2-1~2-5 패턴)
+
 ```json
 {{
-  "connection_quality": ["키워드1", "키워드2", ...],
-  "availability_for_use": ["키워드1", ...],
-  "affordability": ["키워드1", ...],
-  "devices": ["키워드1", ...],
-  "digital_skills": ["키워드1", ...],
-  "safety_and_security": ["키워드1", ...],
+  "connection_quality": {{
+    "observed": ["느려", "와이파이 안"],
+    "expanded": ["느리다", "느린", "느렸", "느려서", "느려요", "느리고", "느림", "느려지", "느려짐"],
+    "slang": ["개느려", "겁나느려", "넘느림", "느려용", "안잡혀", "안터져", "와파이", "인넷"]
+  }},
+  "availability_for_use": {{
+    "observed": [],
+    "expanded": [],
+    "slang": []
+  }},
+  "affordability": {{
+    "observed": [],
+    "expanded": [],
+    "slang": []
+  }},
+  "devices": {{
+    "observed": [],
+    "expanded": [],
+    "slang": []
+  }},
+  "digital_skills": {{
+    "observed": [],
+    "expanded": [],
+    "slang": []
+  }},
+  "safety_and_security": {{
+    "observed": [],
+    "expanded": [],
+    "slang": []
+  }},
   "unrelated_ratio": 0.3,
-  "notes": "기타 관찰 사항"
+  "notes": "특이사항 (예: 특정 지역에 특이 표현 집중 등)"
 }}
 ```
 
-> **중요**: 반드시 위 JSON 형식으로만 답변해 주세요. 각 차원의 값은 문자열 리스트입니다.
+> **중요**:
+> 1. 위 JSON 형식으로만 답변하세요 (코드블록 포함).
+> 2. 각 차원에 키워드가 없으면 빈 배열 `[]`로 두세요.
+> 3. **이미 등록된 키워드 목록에 있는 키워드는 절대 포함하지 마세요.**
+> 4. 관찰된 표현 하나당 최소 8개 이상의 확장형을 예측하여 등록하세요.
 """
     return prompt
 
@@ -236,11 +368,36 @@ def load_keywords(path: Path) -> Dict[str, List[str]]:
     return {dim: list(data.get(dim, []) or []) for dim in UMC_DIMENSIONS}
 
 
+def _flatten_new_keywords(dim_data) -> List[str]:
+    """Claude 응답에서 차원별 키워드를 flat list로 변환합니다.
+
+    새 형식: {"observed": [...], "expanded": [...], "slang": [...]}
+    구 형식: ["kw1", "kw2", ...]
+
+    두 형식 모두 지원합니다 (하위 호환).
+    """
+    if isinstance(dim_data, list):
+        # 구 형식: flat list
+        return [kw for kw in dim_data if isinstance(kw, str)]
+    if isinstance(dim_data, dict):
+        # 새 형식: observed / expanded / slang 세 카테고리
+        result = []
+        for category in ("observed", "expanded", "slang"):
+            items = dim_data.get(category, [])
+            if isinstance(items, list):
+                result.extend(kw for kw in items if isinstance(kw, str))
+        return result
+    return []
+
+
 def merge_keywords(
     existing: Dict[str, List[str]],
-    new_round: Dict[str, List[str]],
+    new_round: Dict,
 ) -> Tuple[Dict[str, List[str]], int, int]:
     """기존 키워드에 신규 키워드를 병합합니다.
+
+    new_round는 새 형식(observed/expanded/slang 분리)과
+    구 형식(flat list) 모두 지원합니다.
 
     Returns:
         (병합된 키워드, 신규 키워드 수, 기존 전체 수)
@@ -250,11 +407,12 @@ def merge_keywords(
     new_count = 0
 
     for dim in UMC_DIMENSIONS:
-        new_keywords = new_round.get(dim, [])
+        new_keywords = _flatten_new_keywords(new_round.get(dim, []))
         existing_set = set(kw.lower() for kw in merged[dim])
 
         for kw in new_keywords:
-            if isinstance(kw, str) and kw.lower() not in existing_set:
+            kw = kw.strip()
+            if kw and kw.lower() not in existing_set:
                 merged[dim].append(kw)
                 existing_set.add(kw.lower())
                 new_count += 1
@@ -350,7 +508,10 @@ def cmd_sample(args):
     sample.to_csv(sample_csv_path, index=False, encoding="utf-8-sig")
     print(f"  샘플 CSV: {sample_csv_path}")
 
-    prompt = build_prompt(sample, round_num)
+    # 기존 키워드 로드 (중복 방지 및 Sonnet에게 맥락 제공)
+    keywords_path = _resolve(DEFAULT_KEYWORDS_OUTPUT)
+    existing_kws = load_keywords(keywords_path)
+    prompt = build_prompt(sample, round_num, existing_keywords=existing_kws)
     prompt_md_path.parent.mkdir(parents=True, exist_ok=True)
     with open(prompt_md_path, "w", encoding="utf-8") as f:
         f.write(prompt)
