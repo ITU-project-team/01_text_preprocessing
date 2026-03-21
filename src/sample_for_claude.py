@@ -173,7 +173,7 @@ def build_prompt(
         title = str(row.get("title", "")).strip() if pd.notna(row.get("title")) else ""
         content = str(row.get("content", "")).strip() if pd.notna(row.get("content")) else ""
         combined = f"{title} {content}".strip()
-        truncated = combined[:300] + ("..." if len(combined) > 300 else "")
+        truncated = combined[:300] + ("..." if len(combined) > 300 else "")  # type: ignore
         gu = row.get("gu", "?")
         text_lines.append(f"[{i+1}] ({gu}) {truncated}")
 
@@ -188,7 +188,7 @@ def build_prompt(
 
     # 기존 키워드 섹션 (발견된 키워드가 있을 때만 포함)
     existing_kw_section = ""
-    if existing_keywords:
+    if existing_keywords is not None:
         total_existing = sum(len(v) for v in existing_keywords.values())
         if total_existing > 0:
             lines = ["## 이미 등록된 키워드 (중복 등록 금지)\n"]
@@ -199,7 +199,7 @@ def build_prompt(
             for dim, kws in existing_keywords.items():
                 if kws:
                     kws_list = list(sorted(kws))
-                    preview = ', '.join(kws_list[:60])
+                    preview = ', '.join(kws_list[:60])  # type: ignore
                     suffix = '...' if len(kws_list) > 60 else ''
                     lines.append(f"**{dim}**: {preview}{suffix}")
             existing_kw_section = "\n" + "\n".join(lines) + "\n"
@@ -413,9 +413,9 @@ def merge_keywords(
         for kw in new_keywords:
             kw = kw.strip()
             if kw and kw.lower() not in existing_set:
-                merged[dim].append(kw)
+                merged[dim].append(kw)  # type: ignore
                 existing_set.add(kw.lower())
-                new_count += 1
+                new_count += 1  # type: ignore
 
     return merged, new_count, prev_total
 
@@ -497,7 +497,7 @@ def cmd_sample(args):
     # 샘플 ID 기록
     id_col = "dbId" if "dbId" in sample.columns else sample.columns[0]
     new_ids = sample[id_col].astype(str).tolist()
-    sampled_ids_data["ids"] = sorted(exclude_ids | set(new_ids))
+    sampled_ids_data["ids"] = sorted(exclude_ids | set(new_ids))  # type: ignore
     _save_json(sampled_ids_path, sampled_ids_data)
 
     # 4. 샘플 CSV + 프롬프트 저장
@@ -584,7 +584,7 @@ def cmd_merge(args):
         "new_keywords": new_count,
         "total_keywords": total_after,
         "prev_total": prev_total,
-        "saturation_rate": round(new_count / prev_total, 4) if prev_total > 0 else None,
+        "saturation_rate": round(new_count / max(prev_total, 1), 4) if prev_total > 0 else None,  # type: ignore
         "saturated": saturated,
     })
     _save_json(log_path, log)
@@ -625,7 +625,7 @@ def cmd_status(args):
     for dim in UMC_DIMENSIONS:
         kws = keywords.get(dim, [])
         count = len(kws)
-        preview = ", ".join(kws[:5])
+        preview = ", ".join(kws[:5])  # type: ignore
         if len(kws) > 5:
             preview += f", ... (+{len(kws) - 5}개)"
         print(f"   - {dim}: {count}개{' — ' + preview if preview else ''}")
@@ -654,7 +654,8 @@ def cmd_status(args):
     if last_round and last_round.get("saturated"):
         print(f"\n✅ 포화 도달 완료! Phase 1 (키워드 필터링)으로 넘어갈 수 있습니다.")
     else:
-        next_round = (last_round["round"] + 1) if last_round else 1
+        next_rnd = last_round.get("round", 0) if isinstance(last_round, dict) else 0
+        next_round = int(next_rnd) + 1 if last_round else 1  # type: ignore
         print(f"\n🔜 다음 단계: python -m src.sample_for_claude sample --round {next_round}")
 
     print("=" * 60)
