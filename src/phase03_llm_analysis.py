@@ -209,12 +209,20 @@ def run_merge(input_path: Path, response_path: Path, output_path: Path) -> None:
         return json.dumps(results_map.get(row_id, []), ensure_ascii=False)
 
     df['umc_classifications'] = df['dbId'].apply(map_classifications)
-    valid_count = len(df[df['umc_classifications'] != "[]"])
-    print(f"  매핑 성공 건수: {valid_count:,} / 전체 {len(df):,}건")
+    
+    # 분석 결과(응답)가 존재하는 행만 필터링하여 저장
+    df_analyzed = df[df['dbId'].isin(results_map.keys())].copy()
+    
+    valid_count = len(df_analyzed)
+    print(f"  분석된 원본 건수: {valid_count:,}건 / 전체 파일 {len(df):,}건")
 
-    print(f"\n[3/3] 최종 CSV 저장: {output_path}")
+    if valid_count == 0:
+        print(f"⚠️ 매핑된 데이터가 없어 {output_path.name} 저장을 건너뜁니다.")
+        return
+
+    print(f"\n[3/3] 최종 분석됨({valid_count}건) CSV 저장: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output_path, index=False, encoding='utf-8-sig')
+    df_analyzed.to_csv(output_path, index=False, encoding='utf-8-sig')
 
 
 def cmd_prepare(args):
