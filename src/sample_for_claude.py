@@ -44,7 +44,7 @@ UMC_DIMENSION_LABELS = {
 }
 
 # 기본 경로
-DEFAULT_INPUT = "data/processed/01_filtered_merged.csv"
+DEFAULT_INPUT = "data/processed/01_cleaned_merged.csv"
 DEFAULT_SEED_KEYWORDS = "config/seed_keywords.yaml"
 DEFAULT_KEYWORDS_OUTPUT = "config/keywords.yaml"
 SAMPLED_IDS_PATH = "data/processed/sampled_ids.json"

@@ -46,7 +46,7 @@ def run_pipeline(
 
     # Step 1: 키워드 필터링
     if "filter" in steps:
-        filtered_path = str(output_path / "01_filtered.csv")
+        filtered_path = str(output_path / "02_keyword_filtered.csv")
         filter_by_keyword.run(
             input_path=current_input,
             output_path=filtered_path,
@@ -57,7 +57,7 @@ def run_pipeline(
 
     # Step 2: Kiwi 텍스트 정규화 (띄어쓰기 + 형태소 + 품사 필터링)
     if "normalize" in steps:
-        normalized_path = str(output_path / "02_normalized.csv")
+        normalized_path = str(output_path / "03_normalized.csv")
         normalize.run(
             input_path=current_input,
             output_path=normalized_path,

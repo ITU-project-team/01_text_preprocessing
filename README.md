@@ -14,10 +14,10 @@
 
 | 단계    | 설명                                                         | 파일                         |
 | ------- | ------------------------------------------------------------ | ---------------------------- |
-| 데이터 정제 | raw CSV에서 DELETED/BLOCKED 제거 후 병합                  | `pipeline.ipynb`             |
+| 데이터 정제 | raw CSV에서 DELETED/BLOCKED 제거 후 병합                  | `phase00_data_cleaning.ipynb`|
 | Phase 0 | 씨앗 키워드 → 층화 랜덤 샘플링 → Claude Code로 정밀 키워드 발견 | `src/sample_for_claude.py`   |
 | Phase 1 | UMC 차원별 키워드를 포함하는 게시글만 추출                    | `src/filter_by_keyword.py`   |
-| Phase 2 | Kiwi 기반 띄어쓰기 교정, 불용어/형태소 필터링                | `src/normalize.py`           |
+| Phase 2 이후 | LLM 감정 분석 및 텍스트 정규화 파이프라인                    | (진행 중)                   |
 
 ## 설치 방법
 
@@ -47,17 +47,16 @@ python -m src.sample_for_claude status
 
 > 📓 노트북으로도 실행 가능: `notebooks/phase0_keyword_discovery.ipynb`
 
-### Phase 1~2: 필터링 및 전처리
+### Phase 1: 키워드 기반 필터링
+
+Phase 0에서 추출한 키워드 사전을 이용해 데이터셋을 1차 필터링합니다.
+> 📓 노트북 실행: `notebooks/phase1_keyword_filtering.ipynb` (결과물: `02_keyword_filtered.csv`)
+
+### Phase 2 이후: 전처리 및 LLM 분석 (예정)
 
 ```bash
 # 전체 파이프라인 실행
-python -m src.pipeline --input data/raw/your_data.csv
-
-# 키워드 필터링만
-python -m src.pipeline --input data/raw/your_data.csv --step filter
-
-# 텍스트 정규화만
-python -m src.pipeline --input data/filtered/01_filtered.csv --step normalize
+python -m src.run_pipeline --input data/raw/your_data.csv
 ```
 
 ## 프로젝트 구조
@@ -74,10 +73,11 @@ text-preprocessing/
 │   ├── sample_for_claude.py  # Phase 0: 샘플링 + Claude 연동
 │   ├── filter_by_keyword.py  # Phase 1: 키워드 필터링
 │   ├── normalize.py          # Phase 2: 텍스트 정규화
-│   └── pipeline.py           # Phase 1~2 통합 실행
+│   └── run_pipeline.py       # 전체 통합 실행
 ├── notebooks/
-│   └── phase0_keyword_discovery.ipynb  # Phase 0 실행 가이드
-├── pipeline.ipynb            # 데이터 정제 및 병합
+│   ├── phase00_data_cleaning.ipynb     # 데이터 정제 및 병합
+│   ├── phase0_keyword_discovery.ipynb  # Phase 0 실행 가이드
+│   └── phase1_keyword_filtering.ipynb  # Phase 1 실행 가이드
 └── tests/
 ```
 
