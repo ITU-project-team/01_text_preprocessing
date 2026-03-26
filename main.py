@@ -3,10 +3,11 @@ UMC 분석 파이프라인 — 통합 실행 진입점
 
 전체 분석 파이프라인을 한 번에 또는 단계별로 실행합니다.
 
-전체 실행 (Phase 1→2→3 prepare까지):
+전체 실행 (Phase 00→1→2→3 prepare까지):
   python main.py
 
 단계별 실행:
+  python main.py --step clean     # Phase 00: 데이터 클리닝 및 병합
   python main.py --step filter    # Phase 1: 키워드 필터링
   python main.py --step split     # Phase 2: 구별 분할
   python main.py --step prepare   # Phase 3a: 배치 입력 생성
@@ -21,9 +22,8 @@ Phase 3 옵션:
   python main.py --step prepare --batch-size 30
 
 파이프라인 흐름:
-  data/raw/*.csv
-    └─ [전처리: phase00_data_cleaning.ipynb]
-         └─ data/processed/01_cleaned_merged.csv
+  data/raw/daangn_chunk_*.csv
+    └─ [clean] data/processed/01_cleaned_merged.csv
               └─ [filter] data/processed/02_keyword_filtered.csv
                    └─ [split] data/processed/split_by_gu/{구명}.csv
                         └─ [prepare] data/processed/phase03_batches/{구명}_batch{N}.md
@@ -39,9 +39,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 # 단계 정의 (순서 고정)
-PIPELINE_STEPS = ["filter", "split", "prepare", "parse", "merge"]
+PIPELINE_STEPS = ["clean", "filter", "split", "prepare", "parse", "merge"]
 
 # 기본 경로
+RAW_DATA_DIR = "data/raw"
 DEFAULT_SOURCE = "data/processed/01_cleaned_merged.csv"
 DEFAULT_KEYWORDS = "config/keywords.yaml"
 FILTERED_CSV = "data/processed/02_keyword_filtered.csv"
@@ -53,6 +54,21 @@ def _resolve(rel: str) -> Path:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+
+def run_clean() -> None:
+    """Phase 00: 원시 청크 파일 병합 및 클리닝"""
+    from src.phase00_data_cleaning import run as dc_run  # type: ignore
+
+    print("=" * 60)
+    print("Phase 00: 원시 데이터 필터링 및 병합 (data cleaning)")
+    print("=" * 60)
+
+    in_dir = str(_resolve(RAW_DATA_DIR))
+    out_path = str(_resolve(DEFAULT_SOURCE))
+
+    dc_run(input_dir=in_dir, output_path=out_path)
+    print(f"\n  출력: {DEFAULT_SOURCE}")
+
 
 def run_filter(source: str, keywords: str) -> None:
     """Phase 1: 키워드 기반 게시글 필터링"""
@@ -128,6 +144,7 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 단계 설명:
+  clean   Phase 00 — 원본 상태 이상/중복 데이터 제거 및 병합
   filter  Phase 1 — 키워드 필터링
   split   Phase 2 — 구별 CSV 분할
   prepare Phase 3a — Claude Code용 배치 입력 생성
@@ -135,7 +152,7 @@ def main() -> None:
   merge   Phase 3c — 최종 CSV 병합
 
 사용 예:
-  python main.py                            # 전체 (filter→split→prepare)
+  python main.py                            # 전체 (clean→filter→split→prepare)
   python main.py --step filter split        # filter + split만
   python main.py --step prepare --batch-size 30
   python main.py --step prepare --gu 종로구
@@ -150,7 +167,7 @@ def main() -> None:
         default=None,
         metavar="STEP",
         help=(
-            "실행할 단계 (기본: filter split prepare). "
+            "실행할 단계 (기본: clean filter split prepare). "
             f"선택 가능: {', '.join(PIPELINE_STEPS)}"
         ),
     )
@@ -180,8 +197,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # 기본값: filter → split → prepare
-    steps: list[str] = args.step if args.step else ["filter", "split", "prepare"]
+    # 기본값: clean → filter → split → prepare
+    steps: list[str] = args.step if args.step else ["clean", "filter", "split", "prepare"]
 
     # 순서 보장 (사용자가 역순으로 입력해도 파이프라인 순서 유지)
     ordered_steps = [s for s in PIPELINE_STEPS if s in steps]
@@ -194,16 +211,19 @@ def main() -> None:
     for step in ordered_steps:
         print()
 
-        if step == "filter":
+        if step == "clean":
+            run_clean()
+
+        elif step == "filter":
             src = args.source
-            # filter 단계는 01_cleaned_merged.csv가 없으면 02를 직접 입력 가능
+            # filter 단계는 01_cleaned_merged.csv가 없거나,
+            # 이미 02_keyword_filtered.csv가 있으면 생략 논리
             if not _resolve(src).exists():
-                # 이미 필터링된 파일이 있으면 split부터 시작 가능
                 if _resolve(FILTERED_CSV).exists():
                     print(f"⚠️  {src} 없음, 이미 {FILTERED_CSV} 존재 → filter 건너뜀")
                     continue
                 else:
-                    print(f"❌ 입력 파일 없음: {src}")
+                    print(f"❌ 입력 파일 없음: {src} (clean 단계를 먼저 실행하세요)")
                     sys.exit(1)
             run_filter(src, args.keywords)
 
