@@ -93,7 +93,6 @@
 | --------------------------- | ------------------------------ |
 | `config/seed_keywords.yaml` | 씨앗 키워드 (사람이 작성/수정) |
 | `config/keywords.yaml`      | 정밀 키워드 (LLM이 생성)       |
-| `src/phase00_keyword_discovery.py`  | 파이프라인 코드                |
 
 ### 실행 방법
 
