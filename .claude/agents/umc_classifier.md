@@ -1,7 +1,8 @@
 ---
 description: UMC(Universal Meaningful Connectivity) 차원 분석 및 평가 기준을 기반으로 마크다운 텍스트를 대상 차원에 맞게 분류하는 에이전트.
-model: claude-3-7-sonnet-20250219
+model: sonnet
 ---
+
 # UMC 텍스트 분류 에이전트 시스템 프롬프트
 
 ---

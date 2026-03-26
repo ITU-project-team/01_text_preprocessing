@@ -10,7 +10,7 @@ import glob
 import pandas as pd  # type: ignore
 import io
 from pathlib import Path
-from src.phase01_keyword_filter import filter_deleted_posts
+from src.phase01_keyword_filter import filter_deleted_posts  # type: ignore
 
 def run(input_dir: str = "data/raw", output_path: str = "data/processed/01_cleaned_merged.csv") -> None:
     """원시 청크 파일들을 병합하고 필터링을 수행합니다."""

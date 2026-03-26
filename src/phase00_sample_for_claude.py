@@ -188,21 +188,21 @@ def build_prompt(
 
     # 기존 키워드 섹션 (발견된 키워드가 있을 때만 포함)
     existing_kw_section = ""
-    if existing_keywords is not None:
-        total_existing = sum(len(v) for v in existing_keywords.values())
-        if total_existing > 0:
-            lines = ["## 이미 등록된 키워드 (중복 등록 금지)\n"]
-            lines.append(
-                "아래는 이전 라운드까지 발견된 키워드입니다. "
-                "이 목록에 **없는 새로운 키워드만** 추출하세요.\n"
-            )
-            for dim, kws in existing_keywords.items():
-                if kws:
-                    kws_list = list(sorted(kws))
-                    preview = ', '.join(kws_list[:60])  # type: ignore
-                    suffix = '...' if len(kws_list) > 60 else ''
-                    lines.append(f"**{dim}**: {preview}{suffix}")
-            existing_kw_section = "\n" + "\n".join(lines) + "\n"
+    safe_existing = existing_keywords or {}
+    total_existing = sum(len(v) for v in safe_existing.values())  # type: ignore
+    if total_existing > 0:
+        lines = ["## 이미 등록된 키워드 (중복 등록 금지)\n"]
+        lines.append(
+            "아래는 이전 라운드까지 발견된 키워드입니다. "
+            "이 목록에 **없는 새로운 키워드만** 추출하세요.\n"
+        )
+        for dim, kws in safe_existing.items():  # type: ignore
+            if kws:
+                kws_list = list(sorted(kws))
+                preview = ', '.join(kws_list[:60])  # type: ignore
+                suffix = '...' if len(kws_list) > 60 else ''
+                lines.append(f"**{dim}**: {preview}{suffix}")
+        existing_kw_section = "\n" + "\n".join(lines) + "\n"
 
     prompt = f"""# 키워드 발견 분석 요청 (라운드 {round_num})
 
