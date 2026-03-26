@@ -7,9 +7,9 @@ Phase 0: Claude 기반 키워드 발견 — 샘플링 & 병합 도구
   3. status: 현재 진행 상태 확인
 
 실행:
-  python -m src.sample_for_claude sample --round 1
-  python -m src.sample_for_claude merge --round 1 --input data/processed/claude_response_round1.json
-  python -m src.sample_for_claude status
+  python -m src.phase00_sample_for_claude sample --round 1
+  python -m src.phase00_sample_for_claude merge --round 1 --input data/processed/claude_response_round1.json
+  python -m src.phase00_sample_for_claude status
 """
 
 import argparse
@@ -521,7 +521,7 @@ def cmd_sample(args):
     print(f"✅ 라운드 {round_num} 샘플 추출 완료!")
     print(f"   다음 단계: prompt_round{round_num}.md 를 Claude에 전달하세요.")
     print(f"   Claude 응답을 data/processed/claude_response_round{round_num}.json 으로 저장한 뒤:")
-    print(f"   python -m src.sample_for_claude merge --round {round_num} --input data/processed/claude_response_round{round_num}.json")
+    print(f"   python -m src.phase00_sample_for_claude merge --round {round_num} --input data/processed/claude_response_round{round_num}.json")
     print(f"{'=' * 60}")
 
 
@@ -603,7 +603,7 @@ def cmd_merge(args):
     else:
         next_round = round_num + 1
         print(f"🔄 아직 포화되지 않았습니다. 다음 라운드를 진행하세요:")
-        print(f"   python -m src.sample_for_claude sample --round {next_round}")
+        print(f"   python -m src.phase00_sample_for_claude sample --round {next_round}")
     print(f"{'=' * 60}")
 
 
@@ -656,7 +656,7 @@ def cmd_status(args):
     else:
         next_rnd = last_round.get("round", 0) if isinstance(last_round, dict) else 0
         next_round = int(next_rnd) + 1 if last_round else 1  # type: ignore
-        print(f"\n🔜 다음 단계: python -m src.sample_for_claude sample --round {next_round}")
+        print(f"\n🔜 다음 단계: python -m src.phase00_sample_for_claude sample --round {next_round}")
 
     print("=" * 60)
 
@@ -670,9 +670,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 사용 예:
-  python -m src.sample_for_claude sample --round 1
-  python -m src.sample_for_claude merge --round 1 --input data/processed/claude_response_round1.json
-  python -m src.sample_for_claude status
+  python -m src.phase00_sample_for_claude sample --round 1
+  python -m src.phase00_sample_for_claude merge --round 1 --input data/processed/claude_response_round1.json
+  python -m src.phase00_sample_for_claude status
         """,
     )
     subparsers = parser.add_subparsers(dest="command", help="서브커맨드")

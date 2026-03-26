@@ -45,10 +45,13 @@
 │      → 불필요한 품사(조사, 어미 등) 필터링 및 띄어쓰기 정규화
 │        → data/processed/02_normalized.csv
 │
-├─ Phase 3: 차원 분류 + 감성 분석 (미구현) ────────────────────
-│    전처리된 글 → 해당 UMC 차원 분류 (다중 라벨)
-│      → 차원별 긍정/부정 판단
-│        방법론 후보: Zero-shot (mDeBERTa), KoBERT, LLM API
+├─ Phase 3: UMC 차원 분류 (Claude Code 오프라인) ──────────────
+│    전처리된 글 → 배치 입력 마크다운 생성 (prepare)
+│      → Claude Code가 umc_classification_prompt.md 기준으로 분류
+│        → 마크다운 응답 파싱 CSV화 (parse)
+│          → 원본 데이터와 병합 (merge)
+│            → data/processed/03_umc_classified.csv
+│              컬럼: dbId, gu, title, content, umc_related, umc_dimensions, problem_group
 │
 └─ Phase 4: 지역별 집계 + 지도 시각화 (미구현) ────────────────
      자치구(gu)별 차원별 긍/부정 건수 집계
@@ -90,17 +93,17 @@
 | --------------------------- | ------------------------------ |
 | `config/seed_keywords.yaml` | 씨앗 키워드 (사람이 작성/수정) |
 | `config/keywords.yaml`      | 정밀 키워드 (LLM이 생성)       |
-| `src/keyword_discovery.py`  | 파이프라인 코드                |
+| `src/phase00_keyword_discovery.py`  | 파이프라인 코드                |
 
 ### 실행 방법
 
 ```bash
 # 실제 실행 (OpenAI API 키 필요)
 export OPENAI_API_KEY="sk-..."
-python -m src.keyword_discovery --input data/raw/seoul.csv --rounds 5
+python -m src.phase00_keyword_discovery --input data/raw/seoul.csv --rounds 5
 
 # 테스트 (LLM 호출 없이 샘플 파일만 저장)
-python -m src.keyword_discovery --input data/raw/seoul.csv --dry-run
+python -m src.phase00_keyword_discovery --input data/raw/seoul.csv --dry-run
 ```
 
 ---
@@ -111,7 +114,7 @@ python -m src.keyword_discovery --input data/raw/seoul.csv --dry-run
 
 | 단계          | 파일                       | 설명                                              |
 | ------------- | -------------------------- | ------------------------------------------------- |
-| 키워드 필터링 | `src/filter_by_keyword.py` | 정밀 키워드로 게시글 선별                         |
+| 키워드 필터링 | `src/phase01_keyword_filter.py` | 정밀 키워드로 게시글 선별                         |
 | 텍스트 정규화 | `src/normalize.py`         | Kiwi 기반 띄어쓰기 교정, 불용어 제거, 형태소 분석 |
 | 통합 실행     | `src/pipeline.py`          | CLI로 전체/단계별 실행                            |
 
@@ -121,15 +124,27 @@ python -m src.pipeline --input data/raw/seoul.csv
 
 ---
 
-## Phase 3 상세: 분석 방법론 후보 (미결정)
+## Phase 3 상세: UMC 분류 (Claude Code 오프라인)
 
-| 방법                     | 장점                        | 단점                       |
-| ------------------------ | --------------------------- | -------------------------- |
-| **Zero-shot** (mDeBERTa) | 라벨 불필요, 다중 차원 분류 | 정확도 검증 필요           |
-| **KoBERT 파인튜닝**      | 높은 정확도                 | 라벨 데이터 직접 구축 필요 |
-| **LLM API**              | 유연, 맥락 이해 우수        | 비용, 속도                 |
+**현재 구현 완료.** `umc_classification_prompt.md`가 분류 에이전트 역할을 합니다.
 
----
+| 단계 | 파일 | 입력 | 출력 |
+|------|------|------|------|
+| prepare | `src/phase03_llm_analysis.py` | `split_by_gu/{구명}.csv` | `phase03_batches/{구명}_batch{N}.md` |
+| (수동) Claude Code | `umc_classification_prompt.md` | 배치 MD | `phase03_responses/{구명}_batch{N}.md` |
+| parse | `src/phase03_llm_analysis.py` | 응답 MD | `phase03_parsed/{구명}_batch{N}.csv` |
+| merge | `src/phase03_llm_analysis.py` | 파싱 CSV + 원본 | `03_umc_classified.csv` |
+
+```bash
+# 통합 실행
+python main.py
+python main.py --step parse merge   # 응답 저장 후
+
+# 단계별 실행
+python -m src.phase03_llm_analysis prepare --gu 종로구
+python -m src.phase03_llm_analysis parse
+python -m src.phase03_llm_analysis merge
+```
 
 ## 기술 스택
 

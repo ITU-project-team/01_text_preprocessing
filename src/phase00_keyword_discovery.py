@@ -9,7 +9,7 @@ Phase 0: LLM 기반 키워드 발견 파이프라인
   5. 결과를 config/keywords.yaml에 저장
 
 실행:
-  python -m src.keyword_discovery --input data/raw/seoul.csv --rounds 3
+  python -m src.phase00_keyword_discovery --input data/raw/seoul.csv --rounds 3
 """
 
 import argparse
