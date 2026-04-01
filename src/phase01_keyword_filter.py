@@ -126,8 +126,14 @@ def run(
     # 데이터 로드
     df = pd.read_csv(input_path, encoding="utf-8")
 
-    # 삭제/빈 게시글 제거
-    df = filter_deleted_posts(df)
+    # 삭제/빈 게시글 제거 (clean 단계를 거치지 않은 원본 입력 대비)
+    if "status" in df.columns:
+        before = len(df)
+        df = filter_deleted_posts(df)
+        if before != len(df):
+            print(f"  (이미 정제된 데이터 사용 시 변화 없음)")
+    else:
+        print(f"  전체 행 수: {len(df):,}")
 
     # 키워드 필터링
     result = filter_by_keywords(df, keywords)

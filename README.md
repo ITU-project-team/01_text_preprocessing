@@ -93,9 +93,10 @@ text-preprocessing/
 │       ├── phase03_parsed/              # 파싱된 배치 CSV
 │       └── 03_umc_classified.csv        # 최종 분류 결과
 ├── src/
-│   ├── sample_for_claude.py             # Phase 0: 키워드 발견
-│   ├── filter_by_keyword.py             # Phase 1: 키워드 필터링
-│   ├── split_by_gu.py                   # Phase 2: 구별 분할
+│   ├── phase00_data_cleaning.py         # Phase 00: 데이터 클리닝 및 병합
+│   ├── phase00_sample_for_claude.py     # Phase 0: 키워드 발견
+│   ├── phase01_keyword_filter.py        # Phase 1: 키워드 필터링
+│   ├── phase02_split_by_gu.py           # Phase 2: 구별 분할
 │   └── phase03_llm_analysis.py          # Phase 3: prepare / parse / merge
 └── notebooks/
     ├── phase00_data_cleaning.ipynb      # 데이터 정제

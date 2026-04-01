@@ -206,6 +206,14 @@ def _parse_md_table(md_text: str) -> pd.DataFrame | None:
         # 구분선 행 건너뜀 (---로만 구성)
         if all(re.match(r"^[-: ]*$", c) for c in cells):
             continue
+        # 텍스트 셀에 파이프가 포함되어 셀이 분리된 경우 대비:
+        # 헤더 기준 컬럼 수보다 셀이 많으면 중간 셀들을 텍스트로 병합
+        if rows and len(cells) > len(rows[0]):
+            expected = len(rows[0])
+            # 첫 셀(ID)은 유지, 마지막 3개 셀(UMC관련/차원/그룹)은 유지, 나머지를 텍스트로 합침
+            overflow = len(cells) - expected
+            merged_text = "|".join(cells[1 : 1 + overflow + 1])
+            cells = [cells[0], merged_text] + cells[2 + overflow :]
         rows.append(cells)
 
     if len(rows) < 2:
