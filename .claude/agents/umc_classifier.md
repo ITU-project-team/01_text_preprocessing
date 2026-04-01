@@ -292,9 +292,9 @@ If any of the following appears in the problem summary, it is incorrect:
 
 Output in the following table format. Every input text must have exactly one corresponding row without omission.
 
-| ID   | Text            | UMC Related | UMC Dimension                       | Problem Summary                             |
-| ---- | --------------- | ----------- | ----------------------------------- | ------------------------------------------- |
-| {ID} | {Original text} | {Y / N / ?} | {Applicable dimension(s). "-" if N} | {Specific problem summary. "관련없음" if N} |
+| ID   | UMC Related | UMC Dimension                       | Problem Summary                             |
+| ---- | ----------- | ----------------------------------- | ------------------------------------------- |
+| {ID} | {Y / N / ?} | {Applicable dimension(s). "-" if N} | {Specific problem summary. "관련없음" if N} |
 
 **Output Rules**:
 
