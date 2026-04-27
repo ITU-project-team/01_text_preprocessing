@@ -32,8 +32,6 @@ Phase 3 옵션:
                                        └─ [merge] data/processed/03_umc_classified.csv
 """
 
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path

@@ -248,33 +248,33 @@ If any of the following appears in the problem summary, it is incorrect:
 
 ### Example Batch Output
 
-| ID  | UMC Related | UMC Dimension                            | Problem Summary                                            |
-| --- | ----------- | ---------------------------------------- | ---------------------------------------------------------- |
-| 1   | Y           | Connection Quality                       | 인터넷 속도 저하 불만                                      |
-| 2   | Y           | Connection Quality, Availability for Use | 산간 지역에서 통신 연결이 안 됨                            |
-| 3   | Y           | Connection Quality                       | 통신사 서비스 연결 장애                                    |
-| 4   | Y           | Digital Skills                           | 앱 사용 방법을 몰라서 도움 요청                            |
-| 5   | Y           | Safety & Security                        | 보이스피싱 피해 경험                                       |
-| 6   | ?           | Availability for Use                     | 와이파이 접근 관련 단순 문의                               |
-| 7   | ?           | Devices                                  | 기기 물리적 수리 장소 문의                                 |
-| 8   | Y           | Digital Skills, Availability for Use     | 무인 키오스크 사용이 어려운 고령층 문제                    |
-| 9   | N           | -                                        | 관련없음                                                   |
-| 10  | Y           | Affordability                            | 통신비 부담으로 저렴한 요금제 탐색                         |
-| 11  | Y           | Availability for Use, Digital Skills     | 오프라인 대안 없이 앱 예약만 가능해서 불편                 |
-| 12  | Y           | Devices                                  | 기기 노후로 앱 설치 불가                                   |
-| 13  | N           | -                                        | 관련없음                                                   |
-| 14  | N           | -                                        | 관련없음                                                   |
-| 15  | N           | -                                        | 관련없음                                                   |
-| 16  | N           | -                                        | 관련없음                                                   |
-| 17  | N           | -                                        | 관련없음                                                   |
-| 18  | Y           | Safety & Security                        | 온라인 구직 과정에서 개인정보 탈취 의심                    |
-| 19  | N           | -                                        | 관련없음                                                   |
-| 20  | ?           | Devices                                  | 컴퓨터 고장으로 디지털 업무 수행 불가                      |
-| 21  | Y           | Affordability, Digital Skills            | 복잡한 요금제 구조로 적절한 선택이 어려움                  |
-| 22  | Y           | Digital Skills                           | 고령자의 스마트폰 조작 능력 부족으로 행정 절차 수행 어려움 |
-| 23  | N           | -                                        | 관련없음                                                   |
-| 24  | N           | -                                        | 관련없음                                                   |
-| 25  | ?           | Digital Skills, Devices                  | 컴퓨터 소프트웨어 설치를 직접 못 해서 업체 탐색            |
+| ID  | Text                                                                        | UMC Related | UMC Dimension                            | Problem Summary                                            |
+| --- | --------------------------------------------------------------------------- | ----------- | ---------------------------------------- | ---------------------------------------------------------- |
+| 1   | 오늘 인터넷 속도가 너무 느리네요                                            | Y           | Connection Quality                       | 인터넷 속도 저하 불만                                      |
+| 2   | skt 쓰는데 산에서 데이터가 안 터져요ㅠ                                      | Y           | Connection Quality, Availability for Use | 산간 지역에서 통신 연결이 안 됨                            |
+| 3   | kt 오늘 먹통이네요                                                          | Y           | Connection Quality                       | 통신사 서비스 연결 장애                                    |
+| 4   | 000어플 이거 어떻게 사용하나요ㅜㅜ                                          | Y           | Digital Skills                           | 앱 사용 방법을 몰라서 도움 요청                            |
+| 5   | 보이스피싱 당했어요...                                                      | Y           | Safety & Security                        | 보이스피싱 피해 경험                                       |
+| 6   | 와이파이 비번 아시는 분?                                                    | ?           | Availability for Use                     | 와이파이 접근 관련 단순 문의                               |
+| 7   | 폰 액정 수리 어디가 좋아요?                                                 | ?           | Devices                                  | 기기 물리적 수리 장소 문의                                 |
+| 8   | 키오스크로만 주문받는데 어르신들 힘들겠네요                                 | Y           | Digital Skills, Availability for Use     | 무인 키오스크 사용이 어려운 고령층 문제                    |
+| 9   | 동네 맛집 추천 좀 해주세요                                                  | N           | -                                        | 관련없음                                                   |
+| 10  | 통신비가 너무 비싸요 알뜰폰으로 갈아탈까 고민중                             | Y           | Affordability                            | 통신비 부담으로 저렴한 요금제 탐색                         |
+| 11  | 앱으로만 예약 가능한데 너무 불편해요                                        | Y           | Availability for Use, Digital Skills     | 오프라인 대안 없이 앱 예약만 가능해서 불편                 |
+| 12  | 스마트폰이 너무 오래돼서 앱이 안 깔려요                                     | Y           | Devices                                  | 기기 노후로 앱 설치 불가                                   |
+| 13  | 오늘 날씨 진짜 좋네요                                                       | N           | -                                        | 관련없음                                                   |
+| 14  | 제빵 기술 배우고 싶어요                                                     | N           | -                                        | 관련없음                                                   |
+| 15  | 에어팟 프로 분실했어요                                                      | N           | -                                        | 관련없음                                                   |
+| 16  | 충치치료 저렴한곳 있나요?                                                   | N           | -                                        | 관련없음                                                   |
+| 17  | 당근 거래했는데 사기당한 것 같아요                                          | N           | -                                        | 관련없음                                                   |
+| 18  | 알바구함 글에 신분증 보내라는데 개인정보 빼는 거 아닌가요?                  | Y           | Safety & Security                        | 온라인 구직 과정에서 개인정보 탈취 의심                    |
+| 19  | 네이버에 검색해도 수선집이 안 나와요                                        | N           | -                                        | 관련없음                                                   |
+| 20  | 컴퓨터가 갑자기 안 켜져서 업무를 못 해요                                    | ?           | Devices                                  | 컴퓨터 고장으로 디지털 업무 수행 불가                      |
+| 21  | 부모님 폰 바꿔드리려는데 요금제가 너무 복잡해요                             | Y           | Affordability, Digital Skills            | 복잡한 요금제 구조로 적절한 선택이 어려움                  |
+| 22  | 실업급여 신청하려는데 핸드폰으로 캡쳐해서 보내라는데 나이가 있어서 어렵네요 | Y           | Digital Skills                           | 고령자의 스마트폰 조작 능력 부족으로 행정 절차 수행 어려움 |
+| 23  | 두바이소금빵 먹어봤어요 맛있네요                                            | N           | -                                        | 관련없음                                                   |
+| 24  | 롯데마트 앱에서 참외 사전예약 했어요                                        | N           | -                                        | 관련없음                                                   |
+| 25  | 윈도우 설치랑 오피스 깔아주는 컴퓨터 가게 있을까요?                         | ?           | Digital Skills, Devices                  | 컴퓨터 소프트웨어 설치를 직접 못 해서 업체 탐색            |
 
 **Key N Judgment Rationale from Examples:**
 
@@ -292,15 +292,12 @@ If any of the following appears in the problem summary, it is incorrect:
 
 Output in the following table format. Every input text must have exactly one corresponding row without omission.
 
-**IMPORTANT: Do NOT include a Text column in the output. Only output 4 columns: ID, UMC Related, UMC Dimension, Problem Summary.**
-
 | ID   | UMC Related | UMC Dimension                       | Problem Summary                             |
 | ---- | ----------- | ----------------------------------- | ------------------------------------------- |
 | {ID} | {Y / N / ?} | {Applicable dimension(s). "-" if N} | {Specific problem summary. "관련없음" if N} |
 
 **Output Rules**:
 
-- **Do NOT include the original text in the output** — only ID, UMC Related, UMC Dimension, and Problem Summary
 - If UMC Related is "N": UMC Dimension is "-", Problem Summary is fixed as "관련없음"
 - If UMC Related is "Y" or "?": UMC Dimension and Problem Summary must be filled in
 - UMC Dimension must use **official English dimension names** (Connection Quality, Availability for Use, Affordability, Devices, Digital Skills, Safety & Security)

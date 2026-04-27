@@ -34,8 +34,6 @@ Claude Code 사용법:
   data/processed/03_umc_classified.csv            ← merge 최종 출력
 """
 
-from __future__ import annotations
-
 import argparse
 import re
 import sys
@@ -166,9 +164,8 @@ def run_prepare(
 def _parse_md_table(md_text: str) -> pd.DataFrame | None:
     """마크다운 테이블에서 분류 결과를 추출하여 DataFrame으로 반환합니다.
 
-    두 가지 출력 형식을 모두 지원합니다:
-    - 4컬럼 (Text 없음): | ID | UMC Related | UMC Dimension | Problem Summary |
-    - 5컬럼 (Text 포함): | ID | Text | UMC Related | UMC Dimension | Problem Summary |
+    umc_classification_prompt.md의 출력 형식:
+    | ID | 텍스트 | UMC관련 | UMC 차원 | 문제 그룹 |
 
     Returns:
         DataFrame (컬럼: dbId, umc_related, umc_dimensions, problem_group)
@@ -209,14 +206,6 @@ def _parse_md_table(md_text: str) -> pd.DataFrame | None:
         # 구분선 행 건너뜀 (---로만 구성)
         if all(re.match(r"^[-: ]*$", c) for c in cells):
             continue
-        # 텍스트 셀에 파이프가 포함되어 셀이 분리된 경우 대비:
-        # 헤더 기준 컬럼 수보다 셀이 많으면 중간 셀들을 텍스트로 병합
-        if rows and len(cells) > len(rows[0]):
-            expected = len(rows[0])
-            # 첫 셀(ID)은 유지, 마지막 3개 셀(UMC관련/차원/그룹)은 유지, 나머지를 텍스트로 합침
-            overflow = len(cells) - expected
-            merged_text = "|".join(cells[1 : 1 + overflow + 1])
-            cells = [cells[0], merged_text] + cells[2 + overflow :]
         rows.append(cells)
 
     if len(rows) < 2:
@@ -236,20 +225,15 @@ def _parse_md_table(md_text: str) -> pd.DataFrame | None:
     idx_id = _find_col("id")
     idx_related = _find_col("umc관련", "related", "umc_related")
     idx_dim = _find_col("차원", "dimension")
-    idx_group = _find_col("그룹", "group", "summary")
+    idx_group = _find_col("그룹", "group")
 
     if idx_id < 0:
         return None
 
-    # idx_group이 못 찾으면 마지막 컬럼으로 시도 (Problem Summary 등)
-    if idx_group < 0 and len(header) >= 4:
-        idx_group = len(header) - 1
-
     records = []
     for raw_row in rows[1:]:  # type: ignore[index]
         row: list[str] = raw_row
-        max_idx = max(i for i in [idx_id, idx_related, idx_dim, idx_group] if i >= 0)
-        if len(row) <= max_idx:
+        if len(row) <= max(idx_id, idx_related, idx_dim, idx_group):
             continue
         db_id = row[idx_id] if idx_id >= 0 else ""
         umc_related = row[idx_related] if idx_related >= 0 else ""

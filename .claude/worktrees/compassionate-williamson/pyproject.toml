@@ -1,0 +1,19 @@
+[project]
+name = "text-preprocessing"
+version = "0.1.0"
+description = "당근마켓 서울 게시글 텍스트 전처리 (UMC 연결성 분석)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas>=2.0.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.60.0",
+    "kiwipiepy>=0.18.0",
+    "openai>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter>=1.0.0",
+    "pytest>=7.0.0",
+]
